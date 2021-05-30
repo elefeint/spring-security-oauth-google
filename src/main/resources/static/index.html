@@ -4,6 +4,8 @@
         <script src="https://apis.google.com/js/platform.js" async defer></script>
 
         <script>
+            let idToken = null;
+
             function initAuth() {
                 fetch('/getClientId')
                     .then(response => response.text())
@@ -29,10 +31,6 @@
                 });
             }
 
-            function logMessage(error) {
-                console.log("message: " + error);
-            }
-
             function onSignIn(user) {
                 var profile = user.getBasicProfile();
 
@@ -53,17 +51,14 @@
                 let info = "";
                 if (user != null) {
                     const profile =  user.getBasicProfile();
+                    idToken = user.getAuthResponse().id_token;
+                    console.log("id token = " + idToken);
 
                     info += profile.getName() + "<br/>";
                     info += profile.getEmail() + "<br/>";
                     info += "<img src=\"" + profile.getImageUrl() + "\"/>";
                 }
                 document.getElementById("frontend-info").innerHTML = info;
-            }
-
-            function checkIdentity() {
-                console.log("will check who you are");
-                return false;
             }
 
             function signOut() {
@@ -75,6 +70,29 @@
                 hideElement("signout-link");
                 showClientInfo(null);
             }
+
+            function checkServerIdentity() {
+                const headers = new Headers();
+                headers.append('X-Auth-Token', idToken);
+
+                fetch('/getServerInfo', {
+                    headers: headers
+                }).then(response => response.json())
+                    .then(properties => {
+                        logMessage(properties);
+                    });
+                console.log("will check who you are");
+                return false;
+            }
+
+            function logMessage(message) {
+                const output = document.getElementById("output");
+                for (prop of Object.keys(message)) {
+                    output.innerHTML += prop + ": " + message[prop] + "<br/>";
+                }
+                output.innerHTML += "<br/>";
+            }
+
         </script>
 
         <style>
@@ -94,7 +112,10 @@
         </div>
 
         <h2>Press to check what the server knows about you:</h2>
-        <input type="button" value="Who am I?" onClick="return checkIdentity();"/>
+        <input type="button" value="Who am I?" onClick="return checkServerIdentity();"/>
 
+        <div id="output">
+
+        </div>
     </body>
 </html>
