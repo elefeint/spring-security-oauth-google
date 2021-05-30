@@ -1,0 +1,100 @@
+<html>
+    <head>
+        <title>Welcome to the entirely non-evil sign in page</title>
+        <script src="https://apis.google.com/js/platform.js" async defer></script>
+
+        <script>
+            function initAuth() {
+                fetch('/getClientId')
+                    .then(response => response.text())
+                    .then(id => {
+                        console.log("id = " + id);
+                        gapi.load('auth2', () =>
+                                gapi.auth2.init({ client_id: id })
+                                    .then(auth => showSigninButton())
+                            );
+                    });
+            }
+
+            function showSigninButton() {
+
+                gapi.signin2.render('signin-button', {
+                    'scope': 'profile email',
+                    'width': 240,
+                    'height': 40,
+                    'longtitle': true,
+                    'theme': 'dark',
+                    'onsuccess': onSignIn,
+                    'onfailure': (error) => { logMessage(error); }
+                });
+            }
+
+            function logMessage(error) {
+                console.log("message: " + error);
+            }
+
+            function onSignIn(user) {
+                var profile = user.getBasicProfile();
+
+                // show
+                showClientInfo(user);
+                showElement("signout-link");
+            }
+
+            function showElement(name) {
+                document.getElementById(name).className = "";
+            }
+
+            function hideElement(name) {
+                document.getElementById(name).className = "hidden";
+            }
+
+            function showClientInfo(user) {
+                let info = "";
+                if (user != null) {
+                    const profile =  user.getBasicProfile();
+
+                    info += profile.getName() + "<br/>";
+                    info += profile.getEmail() + "<br/>";
+                    info += "<img src=\"" + profile.getImageUrl() + "\"/>";
+                }
+                document.getElementById("frontend-info").innerHTML = info;
+            }
+
+            function checkIdentity() {
+                console.log("will check who you are");
+                return false;
+            }
+
+            function signOut() {
+                var auth2 = gapi.auth2.getAuthInstance();
+                auth2.signOut().then(function () {
+                    console.log('User signed out.');
+                });
+
+                hideElement("signout-link");
+                showClientInfo(null);
+            }
+        </script>
+
+        <style>
+            a.hidden, div.hidden {
+                display: none;
+            }
+        </style>
+    </head>
+
+    <body onLoad="initAuth()">
+
+        <div id="signin-button" class="" data-onsuccess="onSignIn"></div>
+        <a id="signout-link" href="#" onclick="signOut();" class="hidden">Sign out</a>
+
+        <h2>What the front-end knows about you:</h2>
+        <div id="frontend-info">
+        </div>
+
+        <h2>Press to check what the server knows about you:</h2>
+        <input type="button" value="Who am I?" onClick="return checkIdentity();"/>
+
+    </body>
+</html>
